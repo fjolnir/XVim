@@ -24,7 +24,6 @@
 @end
 
 @implementation XVimStatusLine{
-    DVTChooserView* _background;
     NSInsetTextView* _status;
 }
 
@@ -32,16 +31,12 @@
 {
     self = [super initWithFrame:frame];
     if (self) {
-        _background = [[NSClassFromString(@"DVTChooserView") performSelector:@selector(alloc)] init];
-        _background.gradientStyle = 2;  // Style number 2 looks like IDEGlassBarView   
-        [_background setBorderSides:12]; // See DVTBorderedView.h for the meaning of the number
         _status = [[NSInsetTextView alloc] initWithFrame:NSMakeRect(0, 0, 0, STATUS_LINE_HEIGHT)];
-        _status.backgroundColor = [NSColor clearColor];
+        _status.backgroundColor = [NSColor colorWithWhite:0.5 alpha:1.0];
         [_status setEditable:NO];
         
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(_documentChangedNotification:) name:XVimDocumentChangedNotification object:nil];
         
-        [self addSubview:_background];
         [self addSubview:_status];
     }
     
@@ -52,7 +47,6 @@
 {
     [[NSNotificationCenter defaultCenter] removeObserver:self];
     
-    [_background release];
     [_status release];
     [super dealloc];
 }
@@ -64,7 +58,7 @@
 	
 	// Calculate inset
 	CGFloat horizontalInset = 0;
-	CGFloat verticalInset = MAX((STATUS_LINE_HEIGHT - [sourceFont pointSize]) / 2, 0);
+	CGFloat verticalInset = MAX((STATUS_LINE_HEIGHT - [sourceFont pointSize]) / 2 - 1.0, 0);
 	CGSize inset = CGSizeMake(horizontalInset, verticalInset);
 	
     XVimOptions* options = [[XVim instance] options];
@@ -76,7 +70,6 @@
     }
     NSRect parentRect = [container frame];
     [self setFrame:NSMakeRect(0, 0, parentRect.size.width, height)];
-    [_background setFrame:NSMakeRect(0, 0, parentRect.size.width, STATUS_LINE_HEIGHT)];
     [_status setFrame:NSMakeRect(0, 0, parentRect.size.width, STATUS_LINE_HEIGHT)];
 	[_status setFont:sourceFont];
 	[_status setInset:inset];
@@ -102,7 +95,12 @@
 {
     NSString *documentPath = [[notification userInfo] objectForKey:XVimDocumentPathKey];
     if (documentPath != nil) {
-        [_status setString:documentPath];
+        DVTFontAndColorTheme* theme = [NSClassFromString(@"DVTFontAndColorTheme") performSelector:@selector(currentTheme)];
+        [_status.textStorage setAttributedString:[[NSAttributedString alloc] initWithString:documentPath
+                                                           attributes:@{
+            NSForegroundColorAttributeName: [NSColor colorWithWhite:0.9 alpha:1],
+            NSFontAttributeName: [theme sourcePlainTextFont]
+        }]];
     }
 }
 
